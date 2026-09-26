@@ -170,7 +170,7 @@ Designed and engineered by **Shahidur Rahman**.
 *   🌐 **Portfolio:** [shahidur.dev](https://shahidur.dev)
 *   🐙 **GitHub:** [@shahidur8381](https://github.com/Shahidur8381)
 *   ✈️ **Telegram:** [@shahidur8381](https://t.me/shahidur8381)
-*   💬 **WhatsApp:** [+8801900000000](https://wa.me/8801900000000) *(Note: Replace with actual link/number if preferred, or use contact handle `shahidur8381`)*
+*   💬 **WhatsApp:** [@shahidur8381](https://wa.me/shahidur8381)
 
 ---
 
