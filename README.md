@@ -37,6 +37,10 @@ MediCore recently underwent a massive architectural overhaul to improve scalabil
 *   **Payment Gateway Integration:** Added an **SSLCommerz** sandbox for processing dummy lab test and appointment payments natively.
 *   **Automated Database Maintenance:** Implemented a backend **CRON job system** to prevent cloud database hibernation and automatically purge temporary users every 3 months.
 
+## 📄 Output Samples
+*   **Digital Prescription PDF:** The system automatically generates professional, printable PDFs from the doctor's cockpit.
+    *   👉 **[View Sample Prescription PDF](assets/sample_prescription.pdf)**
+
 ---
 
 ## 🛠 Tech Stack
@@ -167,3 +171,15 @@ Designed and engineered by **Shahidur Rahman**.
 *   🐙 **GitHub:** [@shahidur8381](https://github.com/Shahidur8381)
 *   ✈️ **Telegram:** [@shahidur8381](https://t.me/shahidur8381)
 *   💬 **WhatsApp:** [+8801900000000](https://wa.me/8801900000000) *(Note: Replace with actual link/number if preferred, or use contact handle `shahidur8381`)*
+
+---
+
+## 🔮 Future Roadmap & Open Source
+
+This project is actively maintained and will receive continuous upgrades in the future, including AI-driven diagnostics, advanced analytics dashboards, and enhanced payment flows.
+
+**Open Source Policy:**
+MediCore is an open-source project. You are highly encouraged to **fork** this repository, learn from the codebase, and use it for your own educational or personal projects! 
+
+However, if you utilize this codebase for commercial purposes, use it in a public portfolio, or create derivative works, **proper credit and attribution to the original author (Shahidur Rahman) is required and greatly appreciated.** If you like the project, don't forget to ⭐ star the repo!
+
