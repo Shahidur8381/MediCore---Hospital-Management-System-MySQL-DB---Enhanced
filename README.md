@@ -75,9 +75,13 @@ MediCore recently underwent a massive architectural overhaul to improve scalabil
 | :---: | :---: |
 | <img src="frontend/public/images/patient-portal.jpg" alt="Patient Portal" width="100%" /> | <img src="frontend/public/images/doctor-portal.jpg" alt="Doctor Portal" width="100%" /> |
 
-| Hospital Admin Panel | Lab Technician Portal |
+| Hospital Admin Panel | Live Outpatient Queue TV |
 | :---: | :---: |
-| <img src="frontend/public/images/admin-portal.jpg" alt="Admin Portal" width="100%" /> | <img src="frontend/public/images/lab-portal.jpg" alt="Lab Portal" width="100%" /> |
+| <img src="assets/screenshots/admin-dashboard-3.png" alt="Admin Portal" width="100%" /> | <img src="assets/screenshots/live-queue-tv.png" alt="Live Queue TV" width="100%" /> |
+
+| Lab Technician Portal | |
+| :---: | :---: |
+| <img src="frontend/public/images/lab-portal.jpg" alt="Lab Portal" width="100%" /> | |
 
 ### 📊 Database Architecture (ER Diagram)
 <div align="center">
