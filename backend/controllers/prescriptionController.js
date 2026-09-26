@@ -13,7 +13,8 @@ exports.getPrescriptionByAppointmentId = async (req, res) => {
              FROM PRESCRIPTION p
              JOIN DOCTOR d ON p.doctor_id = d.doctor_id
              JOIN PATIENT pat ON p.patient_id = pat.patient_id
-             WHERE p.appointment_id = ?`,
+             WHERE p.appointment_id = ?
+             ORDER BY p.prescription_id DESC`,
             [appointmentId]
         );
 
@@ -53,7 +54,7 @@ exports.getPatientPrescriptions = async (req, res) => {
              JOIN DOCTOR d ON p.doctor_id = d.doctor_id
              JOIN APPOINTMENT a ON p.appointment_id = a.appointment_id
              WHERE p.patient_id = ?
-             ORDER BY p.prescription_date DESC`,
+             ORDER BY p.prescription_date DESC, p.prescription_id DESC`,
             [req.user.patientId]
         );
 
@@ -116,19 +117,50 @@ exports.createPrescription = async (req, res) => {
 // @access  Private (Authorized Patient, Doctor, Admin)
 exports.downloadPrescriptionPdf = async (req, res) => {
     try {
-        const { appointmentId } = req.params;
+        const id = req.params.prescriptionId || req.params.appointmentId;
+        const requestedPrescriptionId = req.query.prescriptionId || req.params.prescriptionId;
 
         // 1. Fetch prescription
-        const rxRes = await executeQuery(
-            `SELECT p.*, d.name as doctor_name, pat.name as patient_name
-             FROM PRESCRIPTION p
-             JOIN DOCTOR d ON p.doctor_id = d.doctor_id
-             JOIN PATIENT pat ON p.patient_id = pat.patient_id
-             WHERE p.appointment_id = ?`,
-            [appointmentId]
-        );
+        let rxRes;
+        
+        // Priority 1: If an explicit prescriptionId is requested (via query param or /prescription/:prescriptionId/pdf)
+        if (requestedPrescriptionId) {
+            rxRes = await executeQuery(
+                `SELECT p.*, d.name as doctor_name, pat.name as patient_name
+                 FROM PRESCRIPTION p
+                 JOIN DOCTOR d ON p.doctor_id = d.doctor_id
+                 JOIN PATIENT pat ON p.patient_id = pat.patient_id
+                 WHERE p.prescription_id = ?`,
+                [requestedPrescriptionId]
+            );
+        }
 
-        if (rxRes.rows.length === 0) {
+        // Priority 2: If route was called with appointmentId, fetch the latest prescription for that appointment
+        if ((!rxRes || rxRes.rows.length === 0) && req.params.appointmentId) {
+            rxRes = await executeQuery(
+                `SELECT p.*, d.name as doctor_name, pat.name as patient_name
+                 FROM PRESCRIPTION p
+                 JOIN DOCTOR d ON p.doctor_id = d.doctor_id
+                 JOIN PATIENT pat ON p.patient_id = pat.patient_id
+                 WHERE p.appointment_id = ?
+                 ORDER BY p.prescription_id DESC`,
+                [req.params.appointmentId]
+            );
+        }
+
+        // Priority 3: Check if id directly matches a prescription_id
+        if (!rxRes || rxRes.rows.length === 0) {
+            rxRes = await executeQuery(
+                `SELECT p.*, d.name as doctor_name, pat.name as patient_name
+                 FROM PRESCRIPTION p
+                 JOIN DOCTOR d ON p.doctor_id = d.doctor_id
+                 JOIN PATIENT pat ON p.patient_id = pat.patient_id
+                 WHERE p.prescription_id = ?`,
+                [id]
+            );
+        }
+
+        if (!rxRes || rxRes.rows.length === 0) {
             return res.status(404).json({ message: 'Prescription not found' });
         }
 
@@ -167,7 +199,7 @@ exports.downloadPrescriptionPdf = async (req, res) => {
         });
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="MediCore-Prescription-${appointmentId}.pdf"`);
+        res.setHeader('Content-Disposition', `inline; filename="MediCore-Prescription-${prescription.PRESCRIPTION_ID}.pdf"`);
 
         pdfStream.pipe(res);
     } catch (err) {

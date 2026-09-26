@@ -10,6 +10,7 @@ interface PrescriptionViewerProps {
   onClose: () => void;
   pdfBlobUrl: string | null;
   appointmentId: number;
+  prescriptionId?: number;
   doctorName?: string;
   onDownload: () => void;
 }
@@ -19,6 +20,7 @@ export function PrescriptionViewer({
   onClose,
   pdfBlobUrl,
   appointmentId,
+  prescriptionId,
   doctorName,
   onDownload,
 }: PrescriptionViewerProps) {
@@ -36,7 +38,7 @@ export function PrescriptionViewer({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Prescription Preview (Appointment #${appointmentId})`}
+      title={prescriptionId ? `Prescription #${prescriptionId} Preview (Appt #${appointmentId})` : `Prescription Preview (Appointment #${appointmentId})`}
       description={doctorName ? `Prescribed by Dr. ${doctorName}` : 'Official MediCore Medical Prescription'}
       size="xl"
     >

@@ -37,9 +37,23 @@ export function PrescriptionCard({ prescription }: PrescriptionCardProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
+  // Clear cached preview blob if prescription changes
+  React.useEffect(() => {
+    setBlobUrl(null);
+  }, [prescription.PRESCRIPTION_ID]);
+
+  // Clean up object URL on unmount
+  React.useEffect(() => {
+    return () => {
+      if (blobUrl) {
+        window.URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [blobUrl]);
+
   const fetchPdfBlob = async (): Promise<Blob | null> => {
     try {
-      const response = await api.get(`/api/prescriptions/${prescription.APPOINTMENT_ID}/pdf`, {
+      const response = await api.get(`/api/prescriptions/${prescription.PRESCRIPTION_ID}/pdf?prescriptionId=${prescription.PRESCRIPTION_ID}`, {
         responseType: 'blob',
       });
       return response.data;
@@ -62,7 +76,7 @@ export function PrescriptionCard({ prescription }: PrescriptionCardProps) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `MediCore_Prescription_#${prescription.APPOINTMENT_ID}.pdf`;
+      link.download = `MediCore_Prescription_#${prescription.PRESCRIPTION_ID}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -184,6 +198,7 @@ export function PrescriptionCard({ prescription }: PrescriptionCardProps) {
         onClose={() => setViewerOpen(false)}
         pdfBlobUrl={blobUrl}
         appointmentId={prescription.APPOINTMENT_ID}
+        prescriptionId={prescription.PRESCRIPTION_ID}
         doctorName={prescription.DOCTOR_NAME}
         onDownload={handleDownload}
       />

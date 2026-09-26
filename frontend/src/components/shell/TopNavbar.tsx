@@ -61,17 +61,27 @@ export function TopNavbar({ onOpenMobileSidebar }: TopNavbarProps) {
         {user?.role && (
           <div className="hidden sm:flex items-center gap-2">
             <RoleBadge role={user.role} size="sm" />
-            {user.isGuestAdmin && (
-              <button 
-                onClick={() => {
-                  sessionStorage.removeItem('hideElevationModal');
-                  window.location.reload();
-                }}
-                className="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-600 border border-red-200 rounded-full hover:bg-red-200 transition-colors cursor-pointer flex items-center gap-1"
-                title="Click to enter TOTP code and unlock Super Admin access"
-              >
-                Read Only
-              </button>
+            {user.role === 'Admin' && (
+              user.isGuestAdmin ? (
+                <button 
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('open-admin-elevation'));
+                  }}
+                  className="px-2.5 py-0.5 text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                  title="Click to enter Google Authenticator code and unlock Super Admin access"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  Read Only
+                </button>
+              ) : (
+                <span 
+                  className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-full flex items-center gap-1 shadow-sm"
+                  title="Super Admin: Full write privileges unlocked"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Super Admin
+                </span>
+              )
             )}
           </div>
         )}

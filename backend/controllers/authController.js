@@ -244,7 +244,12 @@ exports.registerDoctor = async (req, res) => {
 exports.getMe = async (req, res) => {
     try {
         if (req.user.role === 'Admin') {
-            return res.json({ id: req.user.id, role: req.user.role, username: req.user.username });
+            return res.json({ 
+                id: req.user.id, 
+                role: req.user.role, 
+                username: req.user.username,
+                isGuestAdmin: req.user.isGuestAdmin 
+            });
         }
 
         if (req.user.role === 'Doctor') {

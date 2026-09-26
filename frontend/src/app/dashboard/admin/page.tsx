@@ -15,7 +15,7 @@ import {
 import {
   Users, Building2, Plus, Trash2, Pencil, Banknote, ShieldAlert,
   Activity, ArrowUpRight, TrendingUp, CheckCircle2, Clock, 
-  TestTubes, FileText, Search, Filter, ShieldCheck, RefreshCw
+  TestTubes, FileText, Search, Filter, ShieldCheck, RefreshCw, Key
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -73,9 +73,33 @@ export default function AdminDashboard() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const handleOpenElevation = () => setShowElevationModal(true);
+    window.addEventListener('open-admin-elevation', handleOpenElevation);
+    return () => window.removeEventListener('open-admin-elevation', handleOpenElevation);
+  }, []);
+
   const handleCloseElevationModal = () => {
     sessionStorage.setItem('hideElevationModal', 'true');
     setShowElevationModal(false);
+  };
+
+  const handleOpenAddDept = () => {
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Please enter Google Authenticator token to add departments.', 'error');
+      return;
+    }
+    setShowDeptModal(true);
+  };
+
+  const handleOpenAddDoc = () => {
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Please enter Google Authenticator token to register doctors.', 'error');
+      return;
+    }
+    setShowDocModal(true);
   };
 
   const fetchData = useCallback(async () => {
@@ -212,6 +236,11 @@ export default function AdminDashboard() {
   // ===== Department CRUD =====
   const handleCreateDept = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to add departments.', 'error');
+      return;
+    }
     setModalLoading(true);
     try {
       await api.post('/api/departments', deptForm);
@@ -225,12 +254,22 @@ export default function AdminDashboard() {
   };
 
   const openEditDept = (dept: any) => {
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to edit departments.', 'error');
+      return;
+    }
     setEditDeptForm({ id: dept.DEPARTMENT_ID, name: dept.DEPARTMENT_NAME, head: dept.DEPARTMENT_HEAD || '' });
     setShowEditDeptModal(true);
   };
 
   const handleUpdateDept = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to update departments.', 'error');
+      return;
+    }
     setModalLoading(true);
     try {
       await api.put(`/api/departments/${editDeptForm.id}`, { name: editDeptForm.name, head: editDeptForm.head });
@@ -243,6 +282,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteDept = async (id: number) => {
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to delete departments.', 'error');
+      return;
+    }
     if (!confirm('Are you sure you want to delete this department?')) return;
     try {
       await api.delete(`/api/departments/${id}`);
@@ -256,6 +300,11 @@ export default function AdminDashboard() {
   // ===== Doctor CRUD =====
   const handleCreateDoctor = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to register doctors.', 'error');
+      return;
+    }
     setModalLoading(true);
     try {
       await api.post('/api/auth/register-doctor', docForm);
@@ -269,6 +318,11 @@ export default function AdminDashboard() {
   };
 
   const openEditDoc = (doc: any) => {
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to edit doctors.', 'error');
+      return;
+    }
     const rawDob = doc.DATE_OF_BIRTH;
     let dob = '';
     if (rawDob) {
@@ -293,6 +347,11 @@ export default function AdminDashboard() {
 
   const handleUpdateDoc = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to update doctors.', 'error');
+      return;
+    }
     setModalLoading(true);
     try {
       await api.put(`/api/doctors/${editDocForm.id}`, editDocForm);
@@ -305,6 +364,11 @@ export default function AdminDashboard() {
   };
 
   const handleClearPayment = async (doctorId: number) => {
+    if (user?.isGuestAdmin) {
+      setShowElevationModal(true);
+      toast('Guest Mode: Enter Google Authenticator token to clear withdrawals.', 'error');
+      return;
+    }
     try {
       setClearing(String(doctorId));
       await api.post(`/api/finance/clear-withdrawal/${doctorId}`);
@@ -351,7 +415,7 @@ export default function AdminDashboard() {
             variant="outline"
             size="sm"
             icon={<Plus size={15} />}
-            onClick={() => setShowDeptModal(true)}
+            onClick={handleOpenAddDept}
           >
             Add Department
           </Button>
@@ -359,12 +423,45 @@ export default function AdminDashboard() {
             variant="primary"
             size="sm"
             icon={<Plus size={15} />}
-            onClick={() => setShowDocModal(true)}
+            onClick={handleOpenAddDoc}
           >
             Register Doctor
           </Button>
         </div>
       </div>
+
+      {/* Guest Mode Notice Banner */}
+      {user?.isGuestAdmin && (
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-indigo-500/10 border-2 border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="p-3 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl shrink-0">
+              <ShieldAlert size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100">
+                  Guest Admin Mode (View-Only)
+                </h4>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                  Restricted Access
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                You are exploring the admin panel in read-only mode. Enter your Google Authenticator access token to unlock full editing privileges.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setShowElevationModal(true)}
+            icon={<Key size={16} />}
+            className="shrink-0 shadow-md shadow-blue-500/25"
+          >
+            Insert Access Token
+          </Button>
+        </div>
+      )}
 
       {/* Navigation Pills */}
       <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 mb-6 sm:mb-8 overflow-x-auto custom-scrollbar">
@@ -626,7 +723,7 @@ export default function AdminDashboard() {
       {activeTab === 'departments' && (
         <Card className="animate-fade-in overflow-hidden">
           <CardHeader action={
-            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setShowDeptModal(true)}>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={handleOpenAddDept}>
               Add Department
             </Button>
           }>
@@ -675,7 +772,7 @@ export default function AdminDashboard() {
       {activeTab === 'doctors' && (
         <Card className="animate-fade-in overflow-hidden">
           <CardHeader action={
-            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setShowDocModal(true)}>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={handleOpenAddDoc}>
               Register Doctor
             </Button>
           }>

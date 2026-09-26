@@ -12,8 +12,12 @@ router.use(authMiddleware);
 // @desc    Get all prescriptions for the logged-in patient
 router.get('/patient/all', prescriptionController.getPatientPrescriptions);
 
+// @route   GET /api/prescriptions/prescription/:prescriptionId/pdf
+// @desc    Download printable prescription PDF by prescription ID
+router.get('/prescription/:prescriptionId/pdf', prescriptionController.downloadPrescriptionPdf);
+
 // @route   GET /api/prescriptions/:appointmentId/pdf
-// @desc    Download printable prescription PDF
+// @desc    Download printable prescription PDF (by prescription ID or appointment ID)
 router.get('/:appointmentId/pdf', prescriptionController.downloadPrescriptionPdf);
 
 // @route   GET /api/prescriptions/:appointmentId

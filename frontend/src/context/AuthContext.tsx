@@ -29,6 +29,7 @@ interface User {
   doctorId?: number;
   patientId?: number;
   profile?: UserProfile;
+  isGuestAdmin?: boolean;
 }
 
 interface AuthContextType {

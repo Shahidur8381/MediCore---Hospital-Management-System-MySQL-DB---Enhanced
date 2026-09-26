@@ -26,8 +26,8 @@ MediCore is a comprehensive, full-stack hospital management platform built to st
 
 ## 🚀 Key Technical Features
 *   **Real-time Architecture:** Bidirectional WebSocket (Socket.IO) event bus for live queue progression, instant doctor call announcements, and notification toasts.
-*   **Role-Based Access Control (RBAC):** Secure JWT authentication strictly routing users (Admin, Doctor, Patient, Lab) to their specific data contexts.
-*   **Digital Prescription Authoring:** Doctors can generate robust PDF prescriptions with diagnoses, ICD-10 notes, and medication dosages natively in the browser.
+*   **Role-Based Access Control (RBAC):** Secure JWT authentication strictly routing users (Admin, Doctor, Patient, Lab) to their specific data contexts with TOTP dual-mode security for Admin.
+*   **Verified Digital Prescription Engine:** Streamlined clinical prescription workflow with itemized medication schedules, dose timing, multi-format parsing, and pixel-perfect letterhead PDF streaming powered by `@react-pdf/renderer` with real-time in-browser preview.
 *   **Automated CRON Maintenance:** Built-in backend CRON jobs that automatically wipe demo/temporary users every 3 months while protecting core system data.
 *   **Financial & Payment Ledger:** Tracks payments, implements SSLCommerz sandbox for dummy payment workflows, and splits commissions between the hospital (admin) and doctors.
 *   **Responsive UI/UX:** Built with Tailwind CSS, utilizing modern glassmorphism, dynamic gradients, and fluid mobile-first layouts.
@@ -71,17 +71,28 @@ MediCore recently underwent a massive architectural overhaul to improve scalabil
 
 ## 📸 System Previews
 
-| Patient Dashboard | Doctor Consultation Cockpit |
+### 🛡️ Admin Security & Analytics
+| Admin Security Check (TOTP Dual-Mode) | Hospital Administration & Analytics |
 | :---: | :---: |
-| <img src="frontend/public/images/patient-portal.jpg" alt="Patient Portal" width="100%" /> | <img src="frontend/public/images/doctor-portal.jpg" alt="Doctor Portal" width="100%" /> |
+| <img src="assets/screenshots/admin-security-check.png" alt="Admin Security Check" width="100%" /> | <img src="assets/screenshots/admin-dashboard-3.png" alt="Hospital Admin Analytics" width="100%" /> |
 
-| Hospital Admin Panel | Live Outpatient Queue TV |
+### 🩺 Doctor Clinical Cockpit & Workflows
+| Doctor Portal & Physician Profile | Clinical Consultation Cockpit |
 | :---: | :---: |
-| <img src="assets/screenshots/admin-dashboard-3.png" alt="Admin Portal" width="100%" /> | <img src="assets/screenshots/live-queue-tv.png" alt="Live Queue TV" width="100%" /> |
+| <img src="assets/screenshots/doctor-dashboard.png" alt="Doctor Portal Dashboard" width="100%" /> | <img src="assets/screenshots/doctor-consultation-cockpit.png" alt="Clinical Consultation Cockpit" width="100%" /> |
 
-| Lab Technician Portal | |
+| Consultation Schedule & Patient Queue | Live Outpatient Queue TV |
 | :---: | :---: |
-| <img src="frontend/public/images/lab-portal.jpg" alt="Lab Portal" width="100%" /> | |
+| <img src="assets/screenshots/doctor-patient-queue.png" alt="Patient Consultation Queue" width="100%" /> | <img src="assets/screenshots/live-queue-tv.png" alt="Live Queue TV" width="100%" /> |
+
+### 🏥 Patient & Diagnostic Portals
+| Patient Health Profile & Portal | Digital Prescriptions & Rx History |
+| :---: | :---: |
+| <img src="assets/screenshots/patient-dashboard.png" alt="Patient Portal" width="100%" /> | <img src="assets/screenshots/patient/prescription patients page.png" alt="Digital Prescriptions" width="100%" /> |
+
+| Patient Live Queue Status | Diagnostic Lab Technician Portal |
+| :---: | :---: |
+| <img src="assets/screenshots/patient/queue patients page.png" alt="Patient Queue Status" width="100%" /> | <img src="frontend/public/images/lab-portal.jpg" alt="Lab Portal" width="100%" /> |
 
 ### 📊 Database Architecture (ER Diagram)
 <div align="center">
@@ -151,12 +162,22 @@ npm run dev
 ## 🔑 Demo Credentials
 Access the application at `http://localhost:3000` (or the live URL) and use the following default credentials to test the RBAC features:
 
-| Role | Username | Password |
-| :--- | :--- | :--- |
-| **Admin** | `admin` | `password123` |
-| **Doctor** | `doctor1` *(up to `doctor5`)* | `password123` |
-| **Patient** | `patient1` *(up to `patient5`)* | `password123` |
-| **Lab Tech** | `lab` | `password123` |
+| Role | Username | Password | Access Privileges |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin` | `MediCore` | Dual-mode (Guest Read-Only or Super Admin with TOTP) |
+| **Doctor** | `doctor1` *(up to `doctor5`)* | `MediCore` | Doctor Clinical Portal & Prescriptions |
+| **Patient** | `patient1` *(up to `patient5`)* | `MediCore` | Patient Portal, Appointments & Payments |
+| **Lab Tech** | `lab` | `MediCore` | Laboratory Investigation Portal |
+
+### 🛡️ Admin Two-Tier Authentication (TOTP / Authenticator)
+Upon logging into the `admin` account, you will be prompted with two choices:
+1. **Insert Access Token (Super Admin):**
+   - Enter your 6-digit TOTP code from **Google Authenticator** to unlock full administrative privileges (create departments, register doctors, clear doctor payouts).
+   - Super Admin sessions are strictly valid for **60 minutes**.
+   - **Shared Authenticator Secret Key:** `A Secret Key`
+2. **I am a Guest (Read-Only Mode):**
+   - Directly access the full Admin Panel to inspect financial distributions, live analytics, doctor rosters, and audit trails in view-only mode without write permissions.
+   - You can elevate to Super Admin at any time via the "Insert Access Token" banner or navbar badge.
 
 *(Note: If testing on the Live URL, these credentials reset automatically every 3 months via the CRON job).*
 

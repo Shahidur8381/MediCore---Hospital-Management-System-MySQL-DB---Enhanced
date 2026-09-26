@@ -23,8 +23,9 @@ const authMiddleware = (req, res, next) => {
         const decoded = jwt.verify(tokenString, getJwtSecret());
         req.user = decoded.user;
         
-        // Enforce Read-Only mode for Guest Admins
-        if (req.user.isGuestAdmin && req.method !== 'GET') {
+        // Enforce Read-Only mode for Guest Admins (allow elevation endpoint)
+        const isElevation = req.originalUrl?.includes('verify-admin-token') || req.path?.includes('verify-admin-token');
+        if (req.user.isGuestAdmin && req.method !== 'GET' && !isElevation) {
             return res.status(403).json({ message: 'Guest Admin view-only mode. You cannot modify data.' });
         }
         
