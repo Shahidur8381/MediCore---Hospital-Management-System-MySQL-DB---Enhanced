@@ -5,11 +5,11 @@ const { executeQuery } = require('../config/db');
 // @access  Private (Admin, Doctor)
 exports.getPatients = async (req, res) => {
     try {
-        const result = await executeQuery(`SELECT * FROM PATIENT ORDER BY Name`);
+        const result = await executeQuery(`SELECT * FROM PATIENT ORDER BY name`);
         res.json(result.rows);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error fetching patients:', err.message);
+        res.status(500).json({ message: 'Server error retrieving patients' });
     }
 };
 
@@ -18,19 +18,19 @@ exports.getPatients = async (req, res) => {
 // @access  Private (Admin, Doctor, Patient themselves)
 exports.getPatientById = async (req, res) => {
     try {
-        // Simple authorization check
-        if (req.user.role === 'Patient' && req.user.patientId != req.params.id) {
-            return res.status(403).json({ message: 'Access denied' });
+        // Authorization check: patient can only view their own profile
+        if (req.user.role === 'Patient' && String(req.user.patientId) !== String(req.params.id)) {
+            return res.status(403).json({ message: 'Access denied: cannot view another patient profile' });
         }
 
-        const result = await executeQuery(`SELECT * FROM PATIENT WHERE Patient_ID = :id`, [req.params.id]);
+        const result = await executeQuery(`SELECT * FROM PATIENT WHERE patient_id = ?`, [req.params.id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Patient not found' });
         }
         res.json(result.rows[0]);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error fetching patient by id:', err.message);
+        res.status(500).json({ message: 'Server error retrieving patient' });
     }
 };

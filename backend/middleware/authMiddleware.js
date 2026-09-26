@@ -1,23 +1,30 @@
 const jwt = require('jsonwebtoken');
 
+const getJwtSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('FATAL: JWT_SECRET environment variable is missing in production!');
+        }
+        return 'medicore_development_jwt_secret_key_2026';
+    }
+    return secret;
+};
+
 const authMiddleware = (req, res, next) => {
-    // Get token from header
     const token = req.header('Authorization');
 
-    // Check if not token
     if (!token) {
         return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
     try {
-        // Verify token. Expecting format "Bearer <token>"
         const tokenString = token.startsWith('Bearer ') ? token.split(' ')[1] : token;
-        
-        const decoded = jwt.verify(tokenString, process.env.JWT_SECRET || 'medicore_secret_key');
+        const decoded = jwt.verify(tokenString, getJwtSecret());
         req.user = decoded.user;
         next();
     } catch (err) {
-        res.status(401).json({ message: 'Token is not valid' });
+        res.status(401).json({ message: 'Token is not valid or has expired' });
     }
 };
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="medGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#medGrad)" />
+  <!-- Medical Cross with Pulse Beat -->
+  <path d="M96 40 V152 M40 96 H152" stroke="#ffffff" stroke-width="22" stroke-linecap="round" />
+  <!-- Heartbeat ECG line overlay -->
+  <path d="M50 96 H75 L85 70 L105 122 L117 84 L127 96 H142" stroke="#60a5fa" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

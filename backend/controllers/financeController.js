@@ -1,5 +1,4 @@
 const { executeQuery } = require('../config/db');
-const oracledb = require('oracledb');
 
 // @route   GET /api/finance/doctor-stats
 // @desc    Get earnings and withdrawal stats for the logged-in doctor
@@ -8,27 +7,26 @@ exports.getDoctorStats = async (req, res) => {
     try {
         const doctorId = req.user.doctorId;
         
-        // Sum of all Doctor_Amount where is_cleared is N, P, or Y
         const result = await executeQuery(
             `SELECT 
-                SUM(CASE WHEN Is_Cleared = 'N' THEN Doctor_Amount ELSE 0 END) as Available,
-                SUM(CASE WHEN Is_Cleared = 'P' THEN Doctor_Amount ELSE 0 END) as Pending,
-                SUM(CASE WHEN Is_Cleared = 'Y' THEN Doctor_Amount ELSE 0 END) as Cleared,
-                SUM(Doctor_Amount) as Total_Earned
+                IFNULL(SUM(CASE WHEN is_cleared = 'N' THEN doctor_amount ELSE 0 END), 0) as available,
+                IFNULL(SUM(CASE WHEN is_cleared = 'P' THEN doctor_amount ELSE 0 END), 0) as pending,
+                IFNULL(SUM(CASE WHEN is_cleared = 'Y' THEN doctor_amount ELSE 0 END), 0) as cleared,
+                IFNULL(SUM(doctor_amount), 0) as total_earned
              FROM FINANCIAL_LEDGER
-             WHERE Doctor_ID = :1`,
+             WHERE doctor_id = ?`,
             [doctorId]
         );
 
-        const stats = result.rows[0];
+        const stats = result.rows[0] || {};
         res.json({
-            available: stats.AVAILABLE || 0,
-            pending: stats.PENDING || 0,
-            cleared: stats.CLEARED || 0,
-            total: stats.TOTAL_EARNED || 0
+            available: parseFloat(stats.AVAILABLE || 0),
+            pending: parseFloat(stats.PENDING || 0),
+            cleared: parseFloat(stats.CLEARED || 0),
+            total: parseFloat(stats.TOTAL_EARNED || 0)
         });
     } catch (err) {
-        console.error(err.message);
+        console.error('Error fetching doctor stats:', err.message);
         res.status(500).json({ message: 'Server error retrieving doctor stats' });
     }
 };
@@ -42,24 +40,25 @@ exports.requestWithdrawal = async (req, res) => {
         
         // Check if there are any available funds
         const result = await executeQuery(
-            `SELECT SUM(Doctor_Amount) as Available FROM FINANCIAL_LEDGER WHERE Doctor_ID = :1 AND Is_Cleared = 'N'`,
+            `SELECT IFNULL(SUM(doctor_amount), 0) as available FROM FINANCIAL_LEDGER WHERE doctor_id = ? AND is_cleared = 'N'`,
             [doctorId]
         );
 
-        if (!result.rows[0].AVAILABLE || result.rows[0].AVAILABLE === 0) {
+        const available = parseFloat(result.rows[0]?.AVAILABLE || 0);
+
+        if (available <= 0) {
             return res.status(400).json({ message: 'No available funds to withdraw' });
         }
 
         // Update all 'N' records to 'P' (Pending)
         await executeQuery(
-            `UPDATE FINANCIAL_LEDGER SET Is_Cleared = 'P' WHERE Doctor_ID = :1 AND Is_Cleared = 'N'`,
-            [doctorId],
-            { autoCommit: true }
+            `UPDATE FINANCIAL_LEDGER SET is_cleared = 'P' WHERE doctor_id = ? AND is_cleared = 'N'`,
+            [doctorId]
         );
 
-        res.json({ message: 'Withdrawal requested successfully' });
+        res.json({ message: 'Withdrawal requested successfully', amountRequested: available });
     } catch (err) {
-        console.error(err.message);
+        console.error('Error requesting withdrawal:', err.message);
         res.status(500).json({ message: 'Server error requesting withdrawal' });
     }
 };
@@ -71,20 +70,20 @@ exports.getAdminStats = async (req, res) => {
     try {
         const result = await executeQuery(
             `SELECT 
-                SUM(Total_Amount) as Total_Revenue,
-                SUM(Admin_Amount) as Hospital_Earned,
-                SUM(CASE WHEN Is_Cleared = 'P' THEN Doctor_Amount ELSE 0 END) as Payment_To_Clear
+                IFNULL(SUM(total_amount), 0) as total_revenue,
+                IFNULL(SUM(admin_amount), 0) as hospital_earned,
+                IFNULL(SUM(CASE WHEN is_cleared = 'P' THEN doctor_amount ELSE 0 END), 0) as payment_to_clear
              FROM FINANCIAL_LEDGER`
         );
 
-        const stats = result.rows[0];
+        const stats = result.rows[0] || {};
         res.json({
-            totalRevenue: stats.TOTAL_REVENUE || 0,
-            hospitalEarned: stats.HOSPITAL_EARNED || 0,
-            paymentToClear: stats.PAYMENT_TO_CLEAR || 0
+            totalRevenue: parseFloat(stats.TOTAL_REVENUE || 0),
+            hospitalEarned: parseFloat(stats.HOSPITAL_EARNED || 0),
+            paymentToClear: parseFloat(stats.PAYMENT_TO_CLEAR || 0)
         });
     } catch (err) {
-        console.error(err.message);
+        console.error('Error fetching admin stats:', err.message);
         res.status(500).json({ message: 'Server error retrieving admin stats' });
     }
 };
@@ -96,19 +95,19 @@ exports.getPendingWithdrawals = async (req, res) => {
     try {
         const result = await executeQuery(
             `SELECT 
-                f.Doctor_ID,
-                d.Name as Doctor_Name,
-                SUM(f.Doctor_Amount) as Pending_Amount,
-                MIN(f.Transaction_Date) as Oldest_Transaction
+                f.doctor_id,
+                d.name as doctor_name,
+                SUM(f.doctor_amount) as pending_amount,
+                MIN(f.transaction_date) as oldest_transaction
              FROM FINANCIAL_LEDGER f
-             JOIN DOCTOR d ON f.Doctor_ID = d.Doctor_ID
-             WHERE f.Is_Cleared = 'P'
-             GROUP BY f.Doctor_ID, d.Name`
+             JOIN DOCTOR d ON f.doctor_id = d.doctor_id
+             WHERE f.is_cleared = 'P'
+             GROUP BY f.doctor_id, d.name`
         );
 
         res.json(result.rows);
     } catch (err) {
-        console.error(err.message);
+        console.error('Error fetching pending withdrawals:', err.message);
         res.status(500).json({ message: 'Server error retrieving pending withdrawals' });
     }
 };
@@ -120,15 +119,18 @@ exports.clearWithdrawal = async (req, res) => {
     try {
         const doctorId = req.params.doctorId;
         
-        await executeQuery(
-            `UPDATE FINANCIAL_LEDGER SET Is_Cleared = 'Y' WHERE Doctor_ID = :1 AND Is_Cleared = 'P'`,
-            [parseInt(doctorId, 10)],
-            { autoCommit: true }
+        const result = await executeQuery(
+            `UPDATE FINANCIAL_LEDGER SET is_cleared = 'Y' WHERE doctor_id = ? AND is_cleared = 'P'`,
+            [parseInt(doctorId, 10)]
         );
+
+        if (result.rowsAffected === 0) {
+            return res.status(400).json({ message: 'No pending withdrawal found for this doctor' });
+        }
 
         res.json({ message: 'Payment cleared successfully' });
     } catch (err) {
-        console.error(err.message);
+        console.error('Error clearing withdrawal:', err.message);
         res.status(500).json({ message: 'Server error clearing payment' });
     }
 };

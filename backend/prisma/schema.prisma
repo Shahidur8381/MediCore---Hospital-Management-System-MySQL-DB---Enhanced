@@ -1,0 +1,181 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Department {
+  departmentId   Int      @id @default(autoincrement()) @map("department_id")
+  departmentName String   @unique @db.VarChar(100) @map("department_name")
+  departmentHead String?  @db.VarChar(100) @map("department_head")
+  doctors        Doctor[]
+
+  @@map("DEPARTMENT")
+}
+
+model Doctor {
+  doctorId        Int              @id @default(autoincrement()) @map("doctor_id")
+  departmentId    Int?             @map("department_id")
+  name            String           @db.VarChar(100) @map("name")
+  gender          String?          @db.VarChar(10) @map("gender")
+  dateOfBirth     DateTime?        @db.Date @map("date_of_birth")
+  specialization  String?          @db.VarChar(100) @map("specialization")
+  qualification   String?          @db.VarChar(100) @map("qualification")
+  phone           String           @unique @db.VarChar(20) @map("phone")
+  email           String           @unique @db.VarChar(100) @map("email")
+  consultationFee Decimal          @db.Decimal(10, 2) @map("consultation_fee")
+  joiningDate     DateTime?        @default(now()) @map("joining_date")
+  status          String?          @default("Active") @db.VarChar(20) @map("status")
+  department      Department?      @relation(fields: [departmentId], references: [departmentId], onDelete: SetNull)
+  userAccounts    UserAccount[]
+  appointments    Appointment[]
+  prescriptions   Prescription[]
+  labTestRecords  LabTestRecord[]
+  financialLedgers FinancialLedger[]
+
+  @@map("DOCTOR")
+}
+
+model Patient {
+  patientId         Int                  @id @default(autoincrement()) @map("patient_id")
+  name              String               @db.VarChar(100) @map("name")
+  gender            String?              @db.VarChar(10) @map("gender")
+  dateOfBirth       DateTime?            @db.Date @map("date_of_birth")
+  bloodGroup        String?              @db.VarChar(5) @map("blood_group")
+  phone             String               @unique @db.VarChar(20) @map("phone")
+  email             String?              @db.VarChar(100) @map("email")
+  address           String?              @db.VarChar(255) @map("address")
+  emergencyContact  String?              @db.VarChar(20) @map("emergency_contact")
+  registrationDate  DateTime?            @default(now()) @map("registration_date")
+  status            String?              @default("Active") @db.VarChar(20) @map("status")
+  userAccounts      UserAccount[]
+  appointments      Appointment[]
+  prescriptions     Prescription[]
+  labTestRecords    LabTestRecord[]
+  financialLedgers  FinancialLedger[]
+  payments          PaymentTransaction[]
+
+  @@map("PATIENT")
+}
+
+model UserAccount {
+  userId       Int       @id @default(autoincrement()) @map("user_id")
+  doctorId     Int?      @map("doctor_id")
+  patientId    Int?      @map("patient_id")
+  username     String    @unique @db.VarChar(50) @map("username")
+  passwordHash String    @db.VarChar(255) @map("password_hash")
+  role         String    @db.VarChar(20) @map("role") // 'Admin', 'Doctor', 'Patient', 'Lab'
+  status       String?   @default("Active") @db.VarChar(20) @map("status")
+  createdDate  DateTime? @default(now()) @map("created_date")
+  doctor       Doctor?   @relation(fields: [doctorId], references: [doctorId], onDelete: SetNull)
+  patient      Patient?  @relation(fields: [patientId], references: [patientId], onDelete: SetNull)
+
+  @@map("USER_ACCOUNT")
+}
+
+model Appointment {
+  appointmentId   Int                  @id @default(autoincrement()) @map("appointment_id")
+  patientId       Int                  @map("patient_id")
+  doctorId        Int                  @map("doctor_id")
+  appointmentDate DateTime             @db.Date @map("appointment_date")
+  bookingDate     DateTime?            @default(now()) @map("booking_date")
+  status          String?              @default("Pending") @db.VarChar(20) @map("status") // 'Pending', 'Confirmed', 'Completed', 'Cancelled', 'Waiting'
+  queueNumber     Int?                 @default(0) @map("queue_number")
+  patient         Patient              @relation(fields: [patientId], references: [patientId], onDelete: Cascade)
+  doctor          Doctor               @relation(fields: [doctorId], references: [doctorId], onDelete: Cascade)
+  prescriptions   Prescription[]
+  payments        PaymentTransaction[]
+
+  @@map("APPOINTMENT")
+}
+
+model Prescription {
+  prescriptionId   Int         @id @default(autoincrement()) @map("prescription_id")
+  appointmentId    Int         @map("appointment_id")
+  patientId        Int         @map("patient_id")
+  doctorId         Int         @map("doctor_id")
+  prescriptionDate DateTime?   @default(now()) @map("prescription_date")
+  diagnosis        String?     @db.VarChar(255) @map("diagnosis")
+  medicines        String?     @db.Text @map("medicines")
+  notes            String?     @db.Text @map("notes")
+  appointment      Appointment @relation(fields: [appointmentId], references: [appointmentId], onDelete: Cascade)
+  patient          Patient     @relation(fields: [patientId], references: [patientId], onDelete: Cascade)
+  doctor           Doctor      @relation(fields: [doctorId], references: [doctorId], onDelete: Cascade)
+
+  @@map("PRESCRIPTION")
+}
+
+model LabTest {
+  testId      Int             @id @default(autoincrement()) @map("test_id")
+  testName    String          @unique @db.VarChar(100) @map("test_name")
+  description String?         @db.VarChar(255) @map("description")
+  testFee     Decimal         @db.Decimal(10, 2) @map("test_fee")
+  status      String?         @default("Available") @db.VarChar(20) @map("status")
+  records     LabTestRecord[]
+
+  @@map("LAB_TEST")
+}
+
+model LabTestRecord {
+  recordId        Int                  @id @default(autoincrement()) @map("record_id")
+  patientId       Int                  @map("patient_id")
+  doctorId        Int                  @map("doctor_id")
+  testId          Int                  @map("test_id")
+  orderDate       DateTime?            @default(now()) @map("order_date")
+  resultDetails   String?              @db.Text @map("result_details")
+  reportDate      DateTime?            @map("report_date")
+  status          String?              @default("Pending") @db.VarChar(30) @map("status") // 'Pending', 'Awaiting Result', 'Completed'
+  waiveCommission String?              @default("N") @db.Char(1) @map("waive_commission")
+  paymentStatus   String?              @default("Unpaid") @db.VarChar(20) @map("payment_status") // 'Unpaid', 'Paid'
+  patient         Patient              @relation(fields: [patientId], references: [patientId], onDelete: Cascade)
+  doctor          Doctor               @relation(fields: [doctorId], references: [doctorId], onDelete: Cascade)
+  test            LabTest              @relation(fields: [testId], references: [testId], onDelete: Cascade)
+  payments        PaymentTransaction[]
+
+  @@map("LAB_TEST_RECORD")
+}
+
+model FinancialLedger {
+  ledgerId        Int       @id @default(autoincrement()) @map("ledger_id")
+  transactionType String    @db.VarChar(50) @map("transaction_type") // 'Appointment', 'Lab Test'
+  referenceId     Int       @map("reference_id")
+  patientId       Int       @map("patient_id")
+  doctorId        Int?      @map("doctor_id")
+  totalAmount     Decimal   @db.Decimal(10, 2) @map("total_amount")
+  doctorAmount    Decimal   @db.Decimal(10, 2) @map("doctor_amount")
+  adminAmount     Decimal   @db.Decimal(10, 2) @map("admin_amount")
+  transactionDate DateTime? @default(now()) @map("transaction_date")
+  isCleared       String?   @default("N") @db.Char(1) @map("is_cleared") // 'N' (Available), 'P' (Pending), 'Y' (Cleared)
+  patient         Patient   @relation(fields: [patientId], references: [patientId], onDelete: Cascade)
+  doctor          Doctor?   @relation(fields: [doctorId], references: [doctorId], onDelete: SetNull)
+
+  @@map("FINANCIAL_LEDGER")
+}
+
+model PaymentTransaction {
+  paymentId     Int            @id @default(autoincrement()) @map("payment_id")
+  tranId        String         @unique @db.VarChar(100) @map("tran_id")
+  valId         String?        @db.VarChar(100) @map("val_id")
+  patientId     Int            @map("patient_id")
+  itemType      String         @db.VarChar(50) @map("item_type") // 'Appointment', 'Lab Test'
+  itemId        Int            @map("item_id")
+  amount        Decimal        @db.Decimal(10, 2) @map("amount")
+  currency      String         @default("BDT") @db.VarChar(10) @map("currency")
+  status        String         @default("PENDING") @db.VarChar(30) @map("status") // 'PENDING', 'VALID', 'FAILED', 'CANCELLED'
+  bankTranId    String?        @db.VarChar(100) @map("bank_tran_id")
+  cardType      String?        @db.VarChar(50) @map("card_type")
+  cardIssuer    String?        @db.VarChar(100) @map("card_issuer")
+  ipnPayload    String?        @db.Text @map("ipn_payload")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  appointmentId Int?           @map("appointment_id")
+  labRecordId   Int?           @map("lab_record_id")
+  patient       Patient        @relation(fields: [patientId], references: [patientId], onDelete: Cascade)
+  appointment   Appointment?   @relation(fields: [appointmentId], references: [appointmentId], onDelete: SetNull)
+  labRecord     LabTestRecord? @relation(fields: [labRecordId], references: [recordId], onDelete: SetNull)
+
+  @@map("PAYMENT_TRANSACTION")
+}

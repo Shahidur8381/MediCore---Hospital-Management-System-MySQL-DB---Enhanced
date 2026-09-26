@@ -6,22 +6,22 @@ const { executeQuery } = require('../config/db');
 exports.getFinancialSummary = async (req, res) => {
     try {
         if (req.user.role !== 'Admin') {
-            return res.status(403).json({ message: 'Access denied' });
+            return res.status(403).json({ message: 'Access denied: Admin role required' });
         }
 
         const summaryQuery = `
             SELECT 
-                NVL(SUM(Admin_Amount), 0) as Total_Admin_Earnings,
-                NVL(SUM(Doctor_Amount), 0) as Total_Doctor_Earnings,
-                NVL(SUM(Total_Amount), 0) as Total_Revenue
+                IFNULL(SUM(admin_amount), 0) as total_admin_earnings,
+                IFNULL(SUM(doctor_amount), 0) as total_doctor_earnings,
+                IFNULL(SUM(total_amount), 0) as total_revenue
             FROM FINANCIAL_LEDGER
         `;
 
         const result = await executeQuery(summaryQuery);
-        res.json(result.rows[0]);
+        res.json(result.rows[0] || { TOTAL_ADMIN_EARNINGS: 0, TOTAL_DOCTOR_EARNINGS: 0, TOTAL_REVENUE: 0 });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error fetching financial summary:', err.message);
+        res.status(500).json({ message: 'Server error retrieving financial summary' });
     }
 };
 
@@ -31,31 +31,70 @@ exports.getFinancialSummary = async (req, res) => {
 exports.getLedger = async (req, res) => {
     try {
         if (req.user.role !== 'Admin') {
-            return res.status(403).json({ message: 'Access denied' });
+            return res.status(403).json({ message: 'Access denied: Admin role required' });
         }
 
         const query = `
             SELECT 
-                f.Ledger_ID,
-                f.Transaction_Type,
-                f.Reference_ID,
-                f.Total_Amount,
-                f.Doctor_Amount,
-                f.Admin_Amount,
-                f.Is_Cleared,
-                f.Transaction_Date,
-                p.Name as Patient_Name,
-                d.Name as Doctor_Name
+                f.ledger_id,
+                f.transaction_type,
+                f.reference_id,
+                f.total_amount,
+                f.doctor_amount,
+                f.admin_amount,
+                f.is_cleared,
+                f.transaction_date,
+                p.name as patient_name,
+                d.name as doctor_name
             FROM FINANCIAL_LEDGER f
-            LEFT JOIN PATIENT p ON f.Patient_ID = p.Patient_ID
-            LEFT JOIN DOCTOR d ON f.Doctor_ID = d.Doctor_ID
-            ORDER BY f.Transaction_Date DESC
+            LEFT JOIN PATIENT p ON f.patient_id = p.patient_id
+            LEFT JOIN DOCTOR d ON f.doctor_id = d.doctor_id
+            ORDER BY f.transaction_date DESC
         `;
 
         const result = await executeQuery(query);
         res.json(result.rows);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error fetching ledger:', err.message);
+        res.status(500).json({ message: 'Server error retrieving ledger' });
+    }
+};
+
+// @route   GET /api/financial/audit-logs
+// @desc    Get system audit log records (financial & clinical transactions)
+// @access  Private (Admin only)
+exports.getAuditLogs = async (req, res) => {
+    try {
+        if (req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Access denied: Admin role required' });
+        }
+
+        const query = `
+            SELECT 
+                f.ledger_id as id,
+                f.transaction_date as timestamp,
+                COALESCE(p.name, 'System') as user_name,
+                'Patient' as role,
+                CONCAT('Payment for ', f.transaction_type) as action,
+                CONCAT(f.transaction_type, ' #', f.reference_id) as entity,
+                CASE 
+                    WHEN f.is_cleared = 'Y' THEN 'Cleared'
+                    WHEN f.is_cleared = 'P' THEN 'Pending Clearance'
+                    ELSE 'Recorded'
+                END as status,
+                f.total_amount as amount,
+                d.name as doctor_name
+            FROM FINANCIAL_LEDGER f
+            LEFT JOIN PATIENT p ON f.patient_id = p.patient_id
+            LEFT JOIN DOCTOR d ON f.doctor_id = d.doctor_id
+            ORDER BY f.transaction_date DESC
+            LIMIT 100
+        `;
+
+        const result = await executeQuery(query);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching audit logs:', err.message);
+        res.status(500).json({ message: 'Server error retrieving audit logs' });
     }
 };

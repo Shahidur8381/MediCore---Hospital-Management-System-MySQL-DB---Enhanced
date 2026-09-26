@@ -1,7 +1,17 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const oracledb = require('oracledb');
-const { executeQuery } = require('../config/db');
+const { executeQuery, getConnection } = require('../config/db');
+
+const getJwtSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('FATAL: JWT_SECRET environment variable is missing in production!');
+        }
+        return 'medicore_development_jwt_secret_key_2026';
+    }
+    return secret;
+};
 
 // @route   POST /api/auth/login
 // @desc    Authenticate user & get token
@@ -9,10 +19,14 @@ const { executeQuery } = require('../config/db');
 exports.login = async (req, res) => {
     const { username, password } = req.body;
 
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+    }
+
     try {
         const result = await executeQuery(
-            `SELECT User_ID, Doctor_ID, Patient_ID, Username, Password_Hash, Role, Status 
-             FROM USER_ACCOUNT WHERE Username = :username`,
+            `SELECT user_id, doctor_id, patient_id, username, password_hash, role, status 
+             FROM USER_ACCOUNT WHERE username = ?`,
             [username]
         );
 
@@ -23,7 +37,7 @@ exports.login = async (req, res) => {
         const user = result.rows[0];
 
         if (user.STATUS !== 'Active') {
-            return res.status(403).json({ message: 'Account is inactive' });
+            return res.status(403).json({ message: 'Account is inactive. Please contact support.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.PASSWORD_HASH);
@@ -44,7 +58,7 @@ exports.login = async (req, res) => {
 
         jwt.sign(
             payload,
-            process.env.JWT_SECRET || 'medicore_secret_key',
+            getJwtSecret(),
             { expiresIn: '1d' },
             (err, token) => {
                 if (err) throw err;
@@ -52,8 +66,8 @@ exports.login = async (req, res) => {
             }
         );
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Login error:', err.message);
+        res.status(500).json({ message: 'Server error during authentication' });
     }
 };
 
@@ -62,48 +76,49 @@ exports.login = async (req, res) => {
 // @access  Public
 exports.registerPatient = async (req, res) => {
     const { username, password, name, gender, dob, bloodGroup, phone, email, address, emergencyContact } = req.body;
-    let connection;
 
+    if (!username || !password || !name || !phone) {
+        return res.status(400).json({ message: 'Username, password, full name, and phone number are required' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    let connection;
     try {
-        // Check if user exists
-        const userCheck = await executeQuery('SELECT User_ID FROM USER_ACCOUNT WHERE Username = :username', [username]);
+        // Check if username exists
+        const userCheck = await executeQuery('SELECT user_id FROM USER_ACCOUNT WHERE username = ?', [username]);
         if (userCheck.rows.length > 0) {
             return res.status(400).json({ message: 'Username already exists' });
         }
 
-        const phoneCheck = await executeQuery('SELECT Patient_ID FROM PATIENT WHERE Phone = :phone', [phone]);
+        // Check if phone already registered
+        const phoneCheck = await executeQuery('SELECT patient_id FROM PATIENT WHERE phone = ?', [phone]);
         if (phoneCheck.rows.length > 0) {
             return res.status(400).json({ message: 'Phone number already registered' });
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Use a SINGLE connection for both inserts (transaction)
-        const { getConnection } = require('../config/db');
         connection = await getConnection();
+        await connection.beginTransaction();
 
         // Insert Patient
         const patientInsert = await connection.execute(
-            `INSERT INTO PATIENT (Name, Gender, Date_Of_Birth, Blood_Group, Phone, Email, Address, Emergency_Contact) 
-             VALUES (:name, :gender, TO_DATE(:dob, 'YYYY-MM-DD'), :bloodGroup, :phone, :email, :address, :emergencyContact) 
-             RETURNING Patient_ID INTO :patientId`,
-            {
-                name, gender, dob, bloodGroup, phone, email, address, emergencyContact,
-                patientId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
-            },
-            { autoCommit: false }
+            `INSERT INTO PATIENT (name, gender, date_of_birth, blood_group, phone, email, address, emergency_contact) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, gender || null, dob || null, bloodGroup || null, phone, email || null, address || null, emergencyContact || null]
         );
 
-        const patientId = patientInsert.outBinds.patientId[0];
+        const patientId = patientInsert.insertId;
 
         // Insert User Account
         await connection.execute(
-            `INSERT INTO USER_ACCOUNT (Patient_ID, Username, Password_Hash, Role) 
-             VALUES (:patientId, :username, :passwordHash, 'Patient')`,
-            { patientId, username, passwordHash: hashedPassword },
-            { autoCommit: false }
+            `INSERT INTO USER_ACCOUNT (patient_id, username, password_hash, role, status) 
+             VALUES (?, ?, ?, 'Patient', 'Active')`,
+            [patientId, username, hashedPassword]
         );
 
         await connection.commit();
@@ -112,11 +127,11 @@ exports.registerPatient = async (req, res) => {
         if (connection) {
             try { await connection.rollback(); } catch (e) { /* ignore */ }
         }
-        console.error(err.message);
-        res.status(500).json({ message: err.message || 'Server error' });
+        console.error('Patient registration error:', err.message);
+        res.status(500).json({ message: err.message || 'Server error during registration' });
     } finally {
         if (connection) {
-            try { await connection.close(); } catch (e) { /* ignore */ }
+            try { connection.release(); } catch (e) { /* ignore */ }
         }
     }
 };
@@ -126,10 +141,18 @@ exports.registerPatient = async (req, res) => {
 // @access  Private (Admin)
 exports.registerDoctor = async (req, res) => {
     const { username, password, departmentId, name, gender, dob, specialization, qualification, phone, email, fee } = req.body;
-    let connection;
 
+    if (!username || !password || !name || !phone || !email || !fee) {
+        return res.status(400).json({ message: 'Username, password, name, phone, email, and consultation fee are required' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    let connection;
     try {
-        const userCheck = await executeQuery('SELECT User_ID FROM USER_ACCOUNT WHERE Username = :username', [username]);
+        const userCheck = await executeQuery('SELECT user_id FROM USER_ACCOUNT WHERE username = ?', [username]);
         if (userCheck.rows.length > 0) {
             return res.status(400).json({ message: 'Username already exists' });
         }
@@ -137,28 +160,21 @@ exports.registerDoctor = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Use a SINGLE connection for both inserts (transaction)
-        const { getConnection } = require('../config/db');
         connection = await getConnection();
+        await connection.beginTransaction();
 
         const doctorInsert = await connection.execute(
-            `INSERT INTO DOCTOR (Department_ID, Name, Gender, Date_Of_Birth, Specialization, Qualification, Phone, Email, Consultation_Fee) 
-             VALUES (:departmentId, :name, :gender, TO_DATE(:dob, 'YYYY-MM-DD'), :specialization, :qualification, :phone, :email, :fee) 
-             RETURNING Doctor_ID INTO :doctorId`,
-            {
-                departmentId, name, gender, dob, specialization, qualification, phone, email, fee,
-                doctorId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
-            },
-            { autoCommit: false }
+            `INSERT INTO DOCTOR (department_id, name, gender, date_of_birth, specialization, qualification, phone, email, consultation_fee, status) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
+            [departmentId || null, name, gender || null, dob || null, specialization || null, qualification || null, phone, email, fee]
         );
 
-        const doctorId = doctorInsert.outBinds.doctorId[0];
+        const doctorId = doctorInsert.insertId;
 
         await connection.execute(
-            `INSERT INTO USER_ACCOUNT (Doctor_ID, Username, Password_Hash, Role) 
-             VALUES (:doctorId, :username, :passwordHash, 'Doctor')`,
-            { doctorId, username, passwordHash: hashedPassword },
-            { autoCommit: false }
+            `INSERT INTO USER_ACCOUNT (doctor_id, username, password_hash, role, status) 
+             VALUES (?, ?, ?, 'Doctor', 'Active')`,
+            [doctorId, username, hashedPassword]
         );
 
         await connection.commit();
@@ -167,11 +183,11 @@ exports.registerDoctor = async (req, res) => {
         if (connection) {
             try { await connection.rollback(); } catch (e) { /* ignore */ }
         }
-        console.error(err.message);
-        res.status(500).json({ message: err.message || 'Server error' });
+        console.error('Doctor registration error:', err.message);
+        res.status(500).json({ message: err.message || 'Server error during doctor registration' });
     } finally {
         if (connection) {
-            try { await connection.close(); } catch (e) { /* ignore */ }
+            try { connection.release(); } catch (e) { /* ignore */ }
         }
     }
 };
@@ -186,12 +202,17 @@ exports.getMe = async (req, res) => {
         }
 
         if (req.user.role === 'Doctor') {
-            const result = await executeQuery('SELECT * FROM DOCTOR WHERE Doctor_ID = :id', [req.user.doctorId]);
+            const result = await executeQuery(`
+                SELECT d.*, dept.department_name 
+                FROM DOCTOR d
+                LEFT JOIN DEPARTMENT dept ON d.department_id = dept.department_id
+                WHERE d.doctor_id = ?
+            `, [req.user.doctorId]);
             return res.json({ id: req.user.id, role: req.user.role, username: req.user.username, profile: result.rows[0] });
         }
 
         if (req.user.role === 'Patient') {
-            const result = await executeQuery('SELECT * FROM PATIENT WHERE Patient_ID = :id', [req.user.patientId]);
+            const result = await executeQuery('SELECT * FROM PATIENT WHERE patient_id = ?', [req.user.patientId]);
             return res.json({ id: req.user.id, role: req.user.role, username: req.user.username, profile: result.rows[0] });
         }
 
@@ -201,7 +222,7 @@ exports.getMe = async (req, res) => {
 
         res.status(404).json({ message: 'Profile not found' });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Get profile error:', err.message);
+        res.status(500).json({ message: 'Server error retrieving profile' });
     }
 };

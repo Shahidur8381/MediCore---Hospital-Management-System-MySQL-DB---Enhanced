@@ -46,14 +46,18 @@ export default function Login() {
       <div className="absolute top-20 right-[10%] w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-20 left-[40%] w-80 h-80 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
 
-      <div className="w-full max-w-md glass-card p-8 animate-fade-in-up z-10">
+      <div className="w-full max-w-md glass-card p-6 sm:p-8 animate-fade-in-up z-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <Heart size={28} className="text-blue-600" fill="currentColor" />
+        <div className="text-center mb-6 sm:mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 mb-3">
+            <img
+              src="/images/logo.jpg"
+              alt="MediCore Logo"
+              className="w-12 h-12 rounded-2xl object-cover shadow-md hover:scale-105 transition-transform mx-auto"
+            />
           </Link>
-          <h1 className="text-3xl font-bold gradient-text">Welcome Back</h1>
-          <p className="text-gray-500 mt-2">Sign in to your MediCore account</p>
+          <h1 className="text-2xl sm:text-3xl font-bold gradient-text">Welcome Back</h1>
+          <p className="text-gray-500 mt-1.5 text-xs sm:text-sm">Sign in to your MediCore account</p>
         </div>
 
         {/* Error */}

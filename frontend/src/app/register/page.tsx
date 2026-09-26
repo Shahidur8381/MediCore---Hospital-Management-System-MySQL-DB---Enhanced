@@ -60,11 +60,18 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      await api.post('/api/auth/register-patient', formData);
+      // Strip confirmPassword and convert empty strings to undefined so the backend validator accepts them
+      const { confirmPassword, ...rest } = formData;
+      const payload: Record<string, string | undefined> = {};
+      for (const [k, v] of Object.entries(rest)) {
+        payload[k] = v === '' ? undefined : v;
+      }
+      await api.post('/api/auth/register-patient', payload);
       toast('Account created successfully! Redirecting to login...', 'success');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: any) {
-      toast(err.response?.data?.message || 'Registration failed', 'error');
+      const detail = err.response?.data?.errors?.[0]?.message || err.response?.data?.message || 'Registration failed';
+      toast(detail, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -81,21 +88,25 @@ export default function Register() {
       <div className="absolute top-10 right-[20%] w-80 h-80 bg-emerald-400 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob"></div>
       <div className="absolute bottom-10 left-[15%] w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
 
-      <div className="w-full max-w-xl glass-card p-8 animate-fade-in-up z-10">
+      <div className="w-full max-w-xl glass-card p-5 sm:p-8 animate-fade-in-up z-10">
         {/* Header */}
         <div className="text-center mb-6">
           <Link href="/" className="inline-flex items-center gap-2 mb-3">
-            <Heart size={28} className="text-emerald-600" fill="currentColor" />
+            <img
+              src="/images/logo.jpg"
+              alt="MediCore Logo"
+              className="w-12 h-12 rounded-2xl object-cover shadow-md hover:scale-105 transition-transform mx-auto"
+            />
           </Link>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Patient Registration</h1>
-          <p className="text-gray-500 mt-1">Join MediCore and manage your healthcare</p>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Patient Registration</h1>
+          <p className="text-gray-500 mt-1 text-xs sm:text-sm">Join MediCore and manage your healthcare</p>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-8">
           {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
+            <div key={label} className="flex items-center gap-1.5 sm:gap-2">
+              <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
                 i < step ? 'bg-emerald-100 text-emerald-700' :
                 i === step ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25' :
                 'bg-gray-100 text-gray-400'
@@ -104,7 +115,7 @@ export default function Register() {
                 <span className="hidden sm:inline">{label}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`w-8 h-0.5 rounded-full transition-colors ${i < step ? 'bg-emerald-400' : 'bg-gray-200'}`} />
+                <div className={`w-4 sm:w-8 h-0.5 rounded-full transition-colors ${i < step ? 'bg-emerald-400' : 'bg-gray-200'}`} />
               )}
             </div>
           ))}

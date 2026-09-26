@@ -5,14 +5,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FullPageSpinner } from '@/components/LoadingSpinner';
+import { DashboardShell } from '@/components/shell';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import api from '@/lib/api';
 import {
-  LogOut, Heart, Calendar, FileText, TestTubes,
-  Phone, Mail, MapPin, User, Droplets, AlertCircle, Shield
+  Calendar, FileText, TestTubes, Phone, Mail, MapPin, User,
+  Droplets, AlertCircle, Shield, ArrowRight, Tv
 } from 'lucide-react';
 
 export default function PatientDashboard() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   const [stats, setStats] = useState({ appointments: 0, labTests: 0, prescriptions: 0 });
@@ -28,109 +30,146 @@ export default function PatientDashboard() {
         .catch(() => {})
         .finally(() => setStatsLoading(false));
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   if (loading || !user) return <FullPageSpinner />;
 
   const profile = user.profile;
 
   const quickActions = [
-    { label: 'Book Appointment', description: 'Schedule a visit with a doctor', icon: Calendar, color: 'blue', stat: stats.appointments, statLabel: 'total', href: '/dashboard/patient/appointments' },
-    { label: 'My Prescriptions', description: 'View your medical prescriptions', icon: FileText, color: 'violet', stat: stats.prescriptions, statLabel: 'total', href: '/dashboard/patient/prescriptions' },
-    { label: 'Lab Results', description: 'Check your test results & pay', icon: TestTubes, color: 'amber', stat: stats.labTests, statLabel: 'total', href: '/dashboard/patient/lab-results' },
+    {
+      label: 'Book Appointment',
+      description: 'Schedule a visit or view token queues',
+      icon: Calendar,
+      color: 'blue',
+      stat: stats.appointments,
+      statLabel: 'Appointments',
+      href: '/dashboard/patient/appointments',
+    },
+    {
+      label: 'My Prescriptions',
+      description: 'View digital Rx and download PDF',
+      icon: FileText,
+      color: 'violet',
+      stat: stats.prescriptions,
+      statLabel: 'Prescriptions',
+      href: '/dashboard/patient/prescriptions',
+    },
+    {
+      label: 'Lab Results',
+      description: 'Check reports and clear pending invoices',
+      icon: TestTubes,
+      color: 'amber',
+      stat: stats.labTests,
+      statLabel: 'Tests',
+      href: '/dashboard/patient/lab-results',
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/80 flex flex-col">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full filter blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-72 h-72 bg-white rounded-full filter blur-3xl" />
+    <DashboardShell>
+      {/* Welcome Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-6 md:p-8 text-white shadow-lg mb-8">
+        <div className="absolute inset-0 opacity-15">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-white rounded-full filter blur-3xl" />
         </div>
-        <div className="max-w-6xl mx-auto px-6 py-8 relative z-10">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <Heart size={22} className="text-white/80" fill="currentColor" />
-              <span className="text-lg font-bold text-white">MediCore</span>
-            </div>
-            <button onClick={logout} className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-medium backdrop-blur-sm transition-all">
-              <LogOut size={16} /> Sign Out
-            </button>
-          </div>
-
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/20">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner shrink-0">
               <User size={36} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">{profile?.NAME || user.username}</h1>
-              <div className="flex flex-wrap items-center gap-3 mt-2">
-                {profile?.BLOOD_GROUP && (
-                  <span className="inline-flex items-center gap-1.5 text-sm text-white/90 bg-white/15 px-3 py-1 rounded-full font-semibold">
-                    <Droplets size={14} /> {profile.BLOOD_GROUP}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5 text-sm text-white/80 bg-white/10 px-3 py-1 rounded-full">
-                  <Shield size={14} /> Patient Portal
-                </span>
-              </div>
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-white/90 mb-2">
+                <Shield size={12} /> Patient Portal
+              </span>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                {profile?.NAME || user.username}
+              </h1>
+              <p className="text-white/80 text-xs md:text-sm mt-1">
+                Access your consultation queues, digital prescriptions, and lab tests anytime.
+              </p>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Content */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 -mt-6 pb-12">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 stagger-children">
-          {quickActions.map((action) => (
-            <Link href={action.href} key={action.label} className="group bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 cursor-pointer relative overflow-hidden block">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-11 h-11 rounded-xl bg-${action.color}-50 flex items-center justify-center`}>
-                  <action.icon size={20} className={`text-${action.color}-600`} />
+          <div className="flex flex-wrap items-center gap-3">
+            {profile?.BLOOD_GROUP && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/20">
+                <Droplets size={14} className="text-rose-200" /> {profile.BLOOD_GROUP}
+              </span>
+            )}
+            <Link
+              href="/queue/display"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-white text-teal-800 hover:bg-white/90 transition-colors shadow-sm"
+            >
+              <Tv size={14} /> Live TV Queue
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Action Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        {quickActions.map((action) => (
+          <Link
+            href={action.href}
+            key={action.label}
+            className="group relative bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 group-hover:scale-105 transition-transform">
+                  <action.icon size={22} />
                 </div>
-                <span className={`text-2xl font-bold text-${action.color}-600`}>
+                <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
                   {statsLoading ? '—' : action.stat}
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-gray-900">{action.label}</h3>
-              <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
-            </Link>
-          ))}
-        </div>
-
-        {/* Profile Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in-up">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <User size={20} className="text-gray-400" /> My Profile
-            </h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { label: 'Gender', value: profile?.GENDER, icon: User },
-                { label: 'Blood Group', value: profile?.BLOOD_GROUP, icon: Droplets },
-                { label: 'Phone', value: profile?.PHONE, icon: Phone },
-                { label: 'Email', value: profile?.EMAIL, icon: Mail },
-                { label: 'Address', value: profile?.ADDRESS, icon: MapPin },
-                { label: 'Emergency Contact', value: profile?.EMERGENCY_CONTACT, icon: AlertCircle },
-              ].map((item) => (
-                <div key={item.label} className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
-                    <item.icon size={18} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{item.label}</p>
-                    <p className="text-sm font-semibold text-gray-800 mt-0.5">{item.value || 'N/A'}</p>
-                  </div>
-                </div>
-              ))}
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {action.label}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                {action.description}
+              </p>
             </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>View details</span>
+              <ArrowRight size={13} />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Patient Profile Information Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User size={18} className="text-blue-600 dark:text-blue-400" />
+            <span>Personal Health Profile</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { label: 'Gender', value: profile?.GENDER, icon: User },
+              { label: 'Blood Group', value: profile?.BLOOD_GROUP, icon: Droplets },
+              { label: 'Phone', value: profile?.PHONE, icon: Phone },
+              { label: 'Email', value: profile?.EMAIL, icon: Mail },
+              { label: 'Address', value: profile?.ADDRESS, icon: MapPin },
+              { label: 'Emergency Contact', value: profile?.EMERGENCY_CONTACT, icon: AlertCircle },
+            ].map((item) => (
+              <div key={item.label} className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                  <item.icon size={18} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{item.label}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{item.value || 'N/A'}</p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </main>
-    </div>
+        </CardContent>
+      </Card>
+    </DashboardShell>
   );
 }

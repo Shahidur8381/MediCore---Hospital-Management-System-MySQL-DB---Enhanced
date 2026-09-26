@@ -13,4 +13,8 @@ router.get('/summary', financialController.getFinancialSummary);
 // @desc    Get all financial ledger transactions
 router.get('/ledger', financialController.getLedger);
 
+// @route   GET /api/financial/audit-logs
+// @desc    Get system audit log records
+router.get('/audit-logs', financialController.getAuditLogs);
+
 module.exports = router;

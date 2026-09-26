@@ -16,13 +16,13 @@ router.get('/', authMiddleware, roleMiddleware('Admin'), async (req, res) => {
         ]);
 
         res.json({
-            departments: deptResult.rows[0].COUNT,
-            doctors: docResult.rows[0].COUNT,
-            patients: patResult.rows[0].COUNT,
+            departments: deptResult.rows[0]?.COUNT || 0,
+            doctors: docResult.rows[0]?.COUNT || 0,
+            patients: patResult.rows[0]?.COUNT || 0,
         });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error fetching admin stats:', err.message);
+        res.status(500).json({ message: 'Server error retrieving system stats' });
     }
 });
 
