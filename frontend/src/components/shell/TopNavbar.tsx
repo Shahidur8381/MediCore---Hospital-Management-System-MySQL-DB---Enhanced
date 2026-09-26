@@ -59,8 +59,13 @@ export function TopNavbar({ onOpenMobileSidebar }: TopNavbarProps) {
       {/* Right section: Role, Notifications, Theme, Profile */}
       <div className="flex items-center gap-2 md:gap-3">
         {user?.role && (
-          <div className="hidden sm:block">
+          <div className="hidden sm:flex items-center gap-2">
             <RoleBadge role={user.role} size="sm" />
+            {user.isGuestAdmin && (
+              <span className="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-600 border border-red-200 rounded-full animate-pulse">
+                Read Only
+              </span>
+            )}
           </div>
         )}
 

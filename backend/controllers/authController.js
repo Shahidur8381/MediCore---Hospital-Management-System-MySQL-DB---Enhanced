@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { executeQuery, getConnection } = require('../config/db');
+const { verifyAdminCode } = require('../utils/totp');
 
 const getJwtSecret = () => {
     const secret = process.env.JWT_SECRET;
@@ -17,7 +18,7 @@ const getJwtSecret = () => {
 // @desc    Authenticate user & get token
 // @access  Public
 exports.login = async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, totpCode } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required' });
@@ -46,20 +47,35 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid Credentials' });
         }
 
+        let isGuestAdmin = false;
+        
+        // If user is Admin, check TOTP
+        if (user.ROLE === 'Admin') {
+            if (totpCode) {
+                if (!verifyAdminCode(totpCode)) {
+                    return res.status(401).json({ message: 'Invalid Authenticator Code' });
+                }
+            } else {
+                // No TOTP provided, login as guest admin (read-only)
+                isGuestAdmin = true;
+            }
+        }
+
         const payload = {
             user: {
                 id: user.USER_ID,
                 role: user.ROLE,
                 username: user.USERNAME,
                 doctorId: user.DOCTOR_ID,
-                patientId: user.PATIENT_ID
+                patientId: user.PATIENT_ID,
+                isGuestAdmin: isGuestAdmin
             }
         };
 
         jwt.sign(
             payload,
             getJwtSecret(),
-            { expiresIn: '1d' },
+            { expiresIn: '1h' },
             (err, token) => {
                 if (err) throw err;
                 res.json({ token, user: payload.user });

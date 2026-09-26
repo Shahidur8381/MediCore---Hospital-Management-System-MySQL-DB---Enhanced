@@ -24,6 +24,7 @@
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.12.0",
     "node-cron": "^4.6.0",
+    "otpauth": "^9.5.2",
     "socket.io": "^4.8.4",
     "zod": "^4.6.5"
   },
