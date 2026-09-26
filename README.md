@@ -19,7 +19,10 @@
 MediCore is a comprehensive, full-stack hospital management platform built to streamline the complex workflows of modern clinical environments. It provides highly tailored, real-time dashboards for **Administrators**, **Doctors**, **Patients**, and **Lab Technicians**.
 
 **Live Demo URL:** [https://medicore.shahidur.dev](https://medicore.shahidur.dev)  
-*(Use the dummy credentials provided in the Setup section to test the different role panels!)*
+*(To test the platform, log into any account. **The universal password for all dummy accounts—including Admin, Doctors, and Patients—is `MediCore`**.)*
+
+> [!TIP]
+> **Admin Dual-Mode Security:** The live Admin Panel uses a custom TOTP elevation system. When logging in as `admin`, you are securely granted "Read-Only Guest Admin" access. To unlock full write permissions, you must possess the Super Admin's Google Authenticator secret code.
 
 ## 🚀 Key Technical Features
 *   **Real-time Architecture:** Bidirectional WebSocket (Socket.IO) event bus for live queue progression, instant doctor call announcements, and notification toasts.
