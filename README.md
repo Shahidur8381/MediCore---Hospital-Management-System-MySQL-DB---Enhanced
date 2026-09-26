@@ -29,6 +29,14 @@ MediCore is a comprehensive, full-stack hospital management platform built to st
 *   **Financial & Payment Ledger:** Tracks payments, implements SSLCommerz sandbox for dummy payment workflows, and splits commissions between the hospital (admin) and doctors.
 *   **Responsive UI/UX:** Built with Tailwind CSS, utilizing modern glassmorphism, dynamic gradients, and fluid mobile-first layouts.
 
+## 🔄 What's New in v2.0 (The Big Migration)
+MediCore recently underwent a massive architectural overhaul to improve scalability, real-time capabilities, and modern deployment standards:
+*   **Database Migration (Oracle to MySQL 8):** Replaced legacy Oracle 11g with a lightweight, cloud-friendly MySQL 8 architecture.
+*   **Real-time Infrastructure:** Replaced static REST polling with **Socket.IO** for instantaneous patient queue updates and doctor notifications.
+*   **Next.js UI Revamp:** Entire frontend rewritten to leverage Next.js App Router with highly interactive dashboards and Tailwind CSS glassmorphism.
+*   **Payment Gateway Integration:** Added an **SSLCommerz** sandbox for processing dummy lab test and appointment payments natively.
+*   **Automated Database Maintenance:** Implemented a backend **CRON job system** to prevent cloud database hibernation and automatically purge temporary users every 3 months.
+
 ---
 
 ## 🛠 Tech Stack
@@ -150,4 +158,12 @@ If you wish to deploy this stack yourself to production:
 3. **Database:** Host the MySQL instance on a cloud provider like Aiven, Supabase (PostgreSQL equivalent), or locally on your VPS.
 
 ---
-*Designed & Engineered by [Shahidur Rahman](https://shahidur.dev)*
+
+## 👨‍💻 Developer & Contact
+
+Designed and engineered by **Shahidur Rahman**.
+
+*   🌐 **Portfolio:** [shahidur.dev](https://shahidur.dev)
+*   🐙 **GitHub:** [@shahidur8381](https://github.com/Shahidur8381)
+*   ✈️ **Telegram:** [@shahidur8381](https://t.me/shahidur8381)
+*   💬 **WhatsApp:** [+8801900000000](https://wa.me/8801900000000) *(Note: Replace with actual link/number if preferred, or use contact handle `shahidur8381`)*
