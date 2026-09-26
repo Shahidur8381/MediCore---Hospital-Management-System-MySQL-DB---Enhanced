@@ -12,6 +12,7 @@ const {
 } = require('../validators/authValidators');
 
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
+router.post('/verify-admin-token', authMiddleware, authController.verifyAdminToken);
 router.post('/register-patient', authLimiter, validate(registerPatientSchema), authController.registerPatient);
 router.post('/register-doctor', authMiddleware, roleMiddleware('Admin'), validate(registerDoctorSchema), authController.registerDoctor);
 router.get('/me', authMiddleware, authController.getMe);

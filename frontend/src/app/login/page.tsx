@@ -11,7 +11,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [totpCode, setTotpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +23,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const res = await api.post('/api/auth/login', { username, password, totpCode });
+      const res = await api.post('/api/auth/login', { username, password });
       await login(res.data.token, res.data.user);
       
       const role = res.data.user.role;
@@ -107,25 +106,6 @@ export default function Login() {
               </button>
             </div>
           </div>
-
-          {/* Admin TOTP Field (Optional for Guest Mode) */}
-          {username.toLowerCase() === 'admin' && (
-            <div className="animate-slide-down">
-              <label htmlFor="totpCode" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Authenticator Code <span className="text-xs text-gray-400 font-normal">(Leave empty for Read-Only Guest Access)</span>
-              </label>
-              <input
-                id="totpCode"
-                type="text"
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value)}
-                disabled={isLoading}
-                maxLength={6}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-white/70 disabled:opacity-50 font-mono tracking-widest text-center text-lg"
-                placeholder="------"
-              />
-            </div>
-          )}
           
           <button
             type="submit"

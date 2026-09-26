@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import { FullPageSpinner } from '@/components/LoadingSpinner';
 import { DashboardShell } from '@/components/shell';
+import { AdminElevationModal } from '@/components/admin/AdminElevationModal';
 import {
   Card, CardHeader, CardTitle, CardContent, Button, Modal, Table,
   TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, EmptyState
@@ -60,6 +61,22 @@ export default function AdminDashboard() {
     specialization: '', qualification: '', phone: '', email: '', fee: '', status: 'Active'
   });
   const [modalLoading, setModalLoading] = useState(false);
+  const [showElevationModal, setShowElevationModal] = useState(false);
+
+  useEffect(() => {
+    // Show elevation modal if user is guest admin and hasn't dismissed it
+    if (user?.role === 'Admin' && user?.isGuestAdmin) {
+      const dismissed = sessionStorage.getItem('hideElevationModal');
+      if (!dismissed) {
+        setShowElevationModal(true);
+      }
+    }
+  }, [user]);
+
+  const handleCloseElevationModal = () => {
+    sessionStorage.setItem('hideElevationModal', 'true');
+    setShowElevationModal(false);
+  };
 
   const fetchData = useCallback(async () => {
     setDataLoading(true);
@@ -306,6 +323,10 @@ export default function AdminDashboard() {
 
   return (
     <DashboardShell>
+      <AdminElevationModal 
+        isOpen={showElevationModal} 
+        onClose={handleCloseElevationModal} 
+      />
       {/* Header & Quick Action Buttons */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>

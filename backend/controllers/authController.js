@@ -18,7 +18,7 @@ const getJwtSecret = () => {
 // @desc    Authenticate user & get token
 // @access  Public
 exports.login = async (req, res) => {
-    const { username, password, totpCode } = req.body;
+    const { username, password } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required' });
@@ -49,16 +49,8 @@ exports.login = async (req, res) => {
 
         let isGuestAdmin = false;
         
-        // If user is Admin, check TOTP
         if (user.ROLE === 'Admin') {
-            if (totpCode) {
-                if (!verifyAdminCode(totpCode)) {
-                    return res.status(401).json({ message: 'Invalid Authenticator Code' });
-                }
-            } else {
-                // No TOTP provided, login as guest admin (read-only)
-                isGuestAdmin = true;
-            }
+            isGuestAdmin = true; // Always start as guest until elevation
         }
 
         const payload = {
@@ -84,6 +76,44 @@ exports.login = async (req, res) => {
     } catch (err) {
         console.error('Login error:', err.message);
         res.status(500).json({ message: 'Server error during authentication' });
+    }
+};
+
+// @route   POST /api/auth/verify-admin-token
+// @desc    Elevate Guest Admin to Super Admin using TOTP
+// @access  Private (Admin)
+exports.verifyAdminToken = async (req, res) => {
+    try {
+        const { totpCode } = req.body;
+        
+        if (req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Not an admin account' });
+        }
+        
+        if (!totpCode || !verifyAdminCode(totpCode)) {
+            return res.status(401).json({ message: 'Invalid Authenticator Code' });
+        }
+        
+        // Code is valid, issue new token with isGuestAdmin = false
+        const payload = {
+            user: {
+                ...req.user,
+                isGuestAdmin: false
+            }
+        };
+        
+        jwt.sign(
+            payload,
+            getJwtSecret(),
+            { expiresIn: '1h' }, // 60 mins session
+            (err, token) => {
+                if (err) throw err;
+                res.json({ token, user: payload.user });
+            }
+        );
+    } catch (err) {
+        console.error('Elevation error:', err.message);
+        res.status(500).json({ message: 'Server error during elevation' });
     }
 };
 

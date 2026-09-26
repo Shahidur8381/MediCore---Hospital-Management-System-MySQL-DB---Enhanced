@@ -62,9 +62,16 @@ export function TopNavbar({ onOpenMobileSidebar }: TopNavbarProps) {
           <div className="hidden sm:flex items-center gap-2">
             <RoleBadge role={user.role} size="sm" />
             {user.isGuestAdmin && (
-              <span className="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-600 border border-red-200 rounded-full animate-pulse">
+              <button 
+                onClick={() => {
+                  sessionStorage.removeItem('hideElevationModal');
+                  window.location.reload();
+                }}
+                className="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-600 border border-red-200 rounded-full hover:bg-red-200 transition-colors cursor-pointer flex items-center gap-1"
+                title="Click to enter TOTP code and unlock Super Admin access"
+              >
                 Read Only
-              </span>
+              </button>
             )}
           </div>
         )}
