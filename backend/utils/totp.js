@@ -2,9 +2,9 @@ const OTPAuth = require('otpauth');
 
 function verifyAdminCode(code) {
     if (!code) return false;
-    
-    const secretStr = process.env.TOTP_SHARED_SECRET || 'VO3W7H2JT7N2HPUNE3QU2MGTKJVHBGXK';
-    
+
+    const secretStr = process.env.TOTP_SHARED_SECRET || 'secret-key';
+
     try {
         const totp = new OTPAuth.TOTP({
             issuer: "MediCore",

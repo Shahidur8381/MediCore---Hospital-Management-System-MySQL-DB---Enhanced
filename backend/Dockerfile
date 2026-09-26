@@ -9,6 +9,10 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install --production
 
+# Generate Prisma Client
+COPY prisma ./prisma/
+RUN npx prisma generate
+
 # Copy backend source code
 COPY . .
 
